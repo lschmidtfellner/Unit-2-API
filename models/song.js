@@ -19,7 +19,9 @@ let songSchema = new mongoose.Schema( {
   },
   popularity: {
     type: Number,
-    required: [true, 'Popularity is required']
+    required: [true, 'Popularity is required'],
+    min: [1, 'Too small'],
+    max: [100, 'Too large']
   }
 })
 
