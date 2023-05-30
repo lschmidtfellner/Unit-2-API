@@ -16,9 +16,21 @@ app.use(express.json())
 //models
 import Song from './models/song.js'
 
-//spotify routes
+//GET individual song information from spotify
 
-//GET recommendations route
+//GET recommendations array based on individual song info
+
+//GET list of batches from "batches" collection
+
+//GET list of songs from within a batch
+
+//POST results to remote DB collection as one document in "batches" collection
+
+//POST liked songs to remote DB collection in "likes" collection
+
+//DELETE entry from "likes" collection
+
+//DELETE recommendation batch from "batches" collection
 
 
 app.listen(PORT, () => {
