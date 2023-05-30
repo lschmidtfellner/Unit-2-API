@@ -5,7 +5,9 @@ import mongodb from 'mongodb'
 import express from 'express'
 import * as dotenv from 'dotenv'
 import axios from 'axios'
-import db from './db/connection.js'
+import {db} from './db/connection.js'
+
+import { getAccessToken } from './db/connection.js'
 
 //config
 dotenv.config()
@@ -16,9 +18,115 @@ app.use(express.json())
 //models
 import Song from './models/song.js'
 
-//GET individual song information from spotify
+//GET individual song information from spotify based on ID
+app.get('/song/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const songURL = `https://api.spotify.com/v1/tracks/${id}`
+
+    // Get access token
+    const accessToken = await getAccessToken()
+
+    const response = await axios.get(songURL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+
+    // Handle the response data here
+    const songData = response.data
+
+    res.json(songData)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
+})
+
+//GET single song document based on search
+app.get('/search', async (req, res) => {
+  const { artist, song } = req.query;
+  const query = `track:${song} artist:${artist}`;
+  const accessToken = await getAccessToken()
+
+  try {
+      const response = await axios.get('https://api.spotify.com/v1/search', {
+          headers: {
+              'Authorization': 'Bearer ' + accessToken
+          },
+          params: {
+              q: query,
+              type: 'track',
+              limit: 1
+          }
+      });
+
+      const tracks = response.data.tracks.items;
+      if (tracks.length > 0) {
+          res.json(tracks[0]);
+      } else {
+          res.status(404).send('No songs found.');
+      }
+  } catch (error) {
+      console.error(error);
+      res.status(500).send('Something went wrong.');
+  }
+});
 
 //GET recommendations array based on individual song info
+app.get('/recommendations', async (req, res) => {
+  const accessToken = await getAccessToken()
+  let { seed_artists, seed_tracks, seed_genres, max_popularity } = req.query;
+  
+  // Convert to arrays in case single values are provided
+  if(seed_artists) seed_artists = seed_artists.split(',')
+  if(seed_tracks) seed_tracks = seed_tracks.split(',')
+  if(seed_genres) seed_genres = seed_genres.split(',')
+  
+  if(!seed_artists && !seed_tracks && !seed_genres) {
+    res.status(400).send('You must provide at least one of seed_artists, seed_tracks, or seed_genres.');
+    return;
+  }
+  
+  const params = {};
+  if(seed_artists) params.seed_artists = seed_artists.join(',')
+  if(seed_tracks) params.seed_tracks = seed_tracks.join(',')
+  if(seed_genres) params.seed_genres = seed_genres.join(',')
+  if(max_popularity) params.max_popularity = max_popularity
+  
+  try {
+      const response = await axios.get('https://api.spotify.com/v1/recommendations', {
+          headers: {
+              'Authorization': 'Bearer ' + accessToken
+          },
+          params
+      });
+
+      // Transform data before sending response
+// Transform data before sending response
+const transformedData = response.data.tracks.map(track => ({
+  song_name: track.name,
+  artist: track.artists.map(artist => artist.name).join(', '),
+  popularity: track.popularity,
+  id: track.id,
+  title: track.name, // assuming 'title' is equivalent to the song name
+  previewURL: track.preview_url, // use the track's preview_url field
+}));
+
+
+      // Save to MongoDB
+      for (let songData of transformedData) {
+        const song = new Song(songData);
+        await song.save();
+      }
+
+      res.json(transformedData);
+  } catch (error) {
+      console.error(error);
+      res.status(500).send('Something went wrong.');
+  }
+});
+
 
 //GET list of batches from "batches" collection
 
@@ -31,7 +139,6 @@ import Song from './models/song.js'
 //DELETE entry from "likes" collection
 
 //DELETE recommendation batch from "batches" collection
-
 
 app.listen(PORT, () => {
   console.log(`Node server running on port:${PORT}`)
