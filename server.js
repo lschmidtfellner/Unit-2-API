@@ -94,7 +94,7 @@ app.get('/recommendations', async (req, res) => {
     return
   }
 
-  const params = {}
+  const params = { limit: 10 }
   if (seed_artists) params.seed_artists = seed_artists.join(',')
   if (seed_tracks) params.seed_tracks = seed_tracks.join(',')
   if (seed_genres) params.seed_genres = seed_genres.join(',')
