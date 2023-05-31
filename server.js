@@ -108,7 +108,7 @@ app.get('/recommendations', async (req, res) => {
         song_name: track.name,
         artist: track.artists.map(artist => artist.name).join(', '),
         popularity: track.popularity,
-        id: track.id,
+        spotify_id: track.id,
         title: track.name, // assuming 'title' is equivalent to the song name
         previewURL: track.preview_url, // use the track's preview_url field
       }));
@@ -157,6 +157,10 @@ app.get('/batches', async (req, res) => {
 })
 
 //GET list of songs from within a batch
+app.get('/batch/:id', async (req, res) => {
+  const { id } = req.params
+
+})
 
 //POST results to remote DB collection as one document in "batches" collection
 
