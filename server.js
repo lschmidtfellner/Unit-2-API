@@ -186,8 +186,7 @@ app.get('/batch/:id', async (req, res) => {
   }
 })
 
-//POST liked song to remote DB collection in "likes" collection
-//POST liked song to remote DB collection in "likes" collection
+//POST liked song to remote DB in "likes" collection
 app.post('/song/:id/like', async (req, res) => {
   const { id } = req.params
   try {
@@ -200,7 +199,6 @@ app.post('/song/:id/like', async (req, res) => {
     }
 
     const like = new Like({
-      // Copy song properties to the Like model
       title: song.title,
       artist: song.artist,
       popularity: song.popularity,
@@ -223,8 +221,29 @@ app.post('/song/:id/like', async (req, res) => {
   }
 })
 
-
 //DELETE entry from "likes" collection
+app.delete('/like/:id', async (req, res) => {
+  const { id } = req.params
+  try {
+    const like = await Like.findByIdAndDelete(id)
+    if (!like) {
+      return res.status(404).json({
+        status: 404,
+        message: 'No like found with that ID'
+      })
+    }
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully removed entry from likes'
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error'
+    })
+  }
+})
 
 //DELETE recommendation batch from "batches" collection
 
