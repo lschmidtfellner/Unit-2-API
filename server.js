@@ -169,11 +169,36 @@ app.post('/:userId/recommendations', async (req, res) => {
   }
 })
 
+//GET likes from 'likes' collection
+app.get('/:userId/likes', async (req, res) => {
+  const userId = req.params.userId
+  try {
+    const response = await Like.find({user: userId})
+    if (!response || response.length === 0 ) {
+      return res.status(404).json({
+        status: 404,
+        message: 'No likes found'
+    })
+  }
+  res.status(200).json({
+    status: 200,
+    message: 'Successfully retrieved likes',
+    body: response
+  })
+} catch (error) {
+  console.error(error)
+  res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error'
+  })
+}
+})
+
 //GET list of batches from "batches" collection
 app.get('/:userId/batches', async (req, res) => {
   const userId = req.params.userId
   try {
-    const response = await Batch.find({ user: mongoose.Types.ObjectId(userId) })
+    const response = await Batch.find({ user: userId })
     if (!response || response.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -279,7 +304,7 @@ app.post('/login', async (req, res) => {
 app.post('/:userId/:songId/like', async (req, res) => {
   const { songId, userId } = req.params
   try {
-    const song = await Song.findById(songId)
+    const song = await Song.findOne({spotify_id: songId})
     const user = await User.findById(userId)
     if (!song) {
       return res.status(404).json({

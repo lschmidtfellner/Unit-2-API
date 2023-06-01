@@ -11,9 +11,7 @@ let likeSchema = new mongoose.Schema({
   },
   popularity: {
     type: Number,
-    required: [true, 'Popularity is required'],
-    min: [1, 'Too small'],
-    max: [100, 'Too large']
+    required: [true, 'Popularity is required']
   },
   spotify_id: {
     type: String,
