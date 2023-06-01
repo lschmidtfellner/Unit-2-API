@@ -74,6 +74,16 @@ app.get('/search', async (req, res) => {
         title: track.name, // assuming 'title' is equivalent to the song name
         previewURL: track.preview_url // use the track's preview_url field
       }
+
+      // Check if the song already exists in the "songs" collection
+      let song = await Song.findOne({ spotify_id: songData.spotify_id })
+
+      // If the song does not exist, create a new one
+      if (!song) {
+        song = new Song(songData)
+        await song.save()
+      }
+
       res.json(songData)
     } else {
       res.status(404).send('No songs found.')
