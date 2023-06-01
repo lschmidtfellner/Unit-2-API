@@ -6,6 +6,7 @@ import express from 'express'
 import * as dotenv from 'dotenv'
 import axios from 'axios'
 import { db } from './db/connection.js'
+import cors from 'cors'
 
 import { getAccessToken } from './db/connection.js'
 
@@ -14,6 +15,7 @@ dotenv.config()
 const PORT = process.env.PORT
 const app = express()
 app.use(express.json())
+app.use(cors({origin: '*'}))
 
 //models
 import Song from './models/song.js'
@@ -68,10 +70,10 @@ app.get('/search', async (req, res) => {
     if (tracks.length > 0) {
       const track = tracks[0]
       const songData = {
+        title: track.name, // assuming 'title' is equivalent to the song name
         artist: track.artists.map((artist) => artist.name).join(', '),
         popularity: track.popularity,
         spotify_id: track.id,
-        title: track.name, // assuming 'title' is equivalent to the song name
         previewURL: track.preview_url // use the track's preview_url field
       }
 
@@ -133,10 +135,10 @@ app.post('/:userId/recommendations', async (req, res) => {
 
     // Transform data before sending response
     const transformedData = response.data.tracks.map((track) => ({
+      title: track.name, // assuming 'title' is equivalent to the song name
       artist: track.artists.map((artist) => artist.name).join(', '),
       popularity: track.popularity,
       spotify_id: track.id,
-      title: track.name, // assuming 'title' is equivalent to the song name
       previewURL: track.preview_url // use the track's preview_url field
     }))
 

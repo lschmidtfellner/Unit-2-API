@@ -9,9 +9,6 @@ let songSchema = new mongoose.Schema( {
     type: [String],
     required: [true, 'Artist is required']
   },
-  previewURL: {
-    type: String,
-  },
   popularity: {
     type: Number,
     required: [true, 'Popularity is required'],
@@ -21,7 +18,10 @@ let songSchema = new mongoose.Schema( {
   spotify_id: {
     type: String,
     required: [true, 'Spotify ID is required']
-  }
+  },
+  previewURL: {
+    type: String,
+  },
 })
 
 let Song = mongoose.model("Song", songSchema)

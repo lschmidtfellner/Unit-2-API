@@ -9,9 +9,6 @@ let likeSchema = new mongoose.Schema({
     type: [String],
     required: [true, 'Artist is required']
   },
-  previewURL: {
-    type: String
-  },
   popularity: {
     type: Number,
     required: [true, 'Popularity is required'],
@@ -21,6 +18,9 @@ let likeSchema = new mongoose.Schema({
   spotify_id: {
     type: String,
     required: [true, 'Spotify ID is required']
+  },
+  previewURL: {
+    type: String
   },
   user: [
     {
