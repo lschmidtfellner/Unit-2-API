@@ -19,6 +19,7 @@ app.use(express.json())
 import Song from './models/song.js'
 import Batch from './models/batch.js'
 import Like from './models/like.js'
+import User from './models/user.js'
 
 //GET individual song information from spotify based on ID
 app.get('/song/:id', async (req, res) => {
@@ -76,7 +77,7 @@ app.get('/search', async (req, res) => {
 })
 
 //GET recommendations array based on individual song info
-app.get('/recommendations', async (req, res) => {
+app.get(':userId/recommendations', async (req, res) => {
   const accessToken = await getAccessToken()
   let { seed_artists, seed_tracks, seed_genres, max_popularity } = req.query
 
@@ -129,7 +130,7 @@ app.get('/recommendations', async (req, res) => {
     }
 
     // Save the batch
-    const batch = new Batch({ songs: songIds })
+    const batch = new Batch({ songs: songIds, user: req.params.userId })
     await batch.save()
 
     res.json(transformedData)
@@ -140,9 +141,12 @@ app.get('/recommendations', async (req, res) => {
 })
 
 //GET list of batches from "batches" collection
-app.get('/batches', async (req, res) => {
+app.get('/:userId/batches', async (req, res) => {
+  const { userId } = req.params.userId
   try {
-    const response = await Batch.find()
+    const response = await Batch.find({
+      user: mongoose.Schema.Types.ObjectId(userId)
+    })
     if (!response || response.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -187,26 +191,28 @@ app.get('/batch/:id', async (req, res) => {
 })
 
 //POST liked song to remote DB in "likes" collection
-app.post('/song/:id/like', async (req, res) => {
-  const { id } = req.params
+app.post('/user/:userId/song/:id/like', async (req, res) => {
+  const { id, userId } = req.params
   try {
     const song = await Song.findById(id)
+    const user = await User.findById(userId)
     if (!song) {
       return res.status(404).json({
         status: 404,
         message: 'No song found with that ID'
       })
     }
-
     const like = new Like({
       title: song.title,
       artist: song.artist,
       popularity: song.popularity,
       spotify_id: song.spotify_id,
-      previewURL: song.previewURL
+      previewURL: song.previewURL,
+      user: userId
     })
-
     await like.save()
+    user.likes.push(like)
+    await user.save()
 
     res.status(200).json({
       status: 200,

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-let likeSchema = new mongoose.Schema( {
+let likeSchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, 'Title is required']
@@ -10,7 +10,7 @@ let likeSchema = new mongoose.Schema( {
     required: [true, 'Artist is required']
   },
   previewURL: {
-    type: String,
+    type: String
   },
   popularity: {
     type: Number,
@@ -21,9 +21,15 @@ let likeSchema = new mongoose.Schema( {
   spotify_id: {
     type: String,
     required: [true, 'Spotify ID is required']
-  }
+  },
+  user: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ]
 })
 
-let Like = mongoose.model("Like", likeSchema)
+let Like = mongoose.model('Like', likeSchema)
 
 export default Like
