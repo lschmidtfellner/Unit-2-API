@@ -236,6 +236,33 @@ app.post('/signup', async (req, res) => {
   }
 })
 
+//POST request to log in
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body
+  try {
+    // Search for a user with the given email and password
+    const user = await User.findOne({ email, password })
+    if (!user) {
+      // If no user was found, return an error
+      return res.status(400).json({ message: 'Invalid email or password' })
+    }
+
+    // If a user was found, return the user
+    res.json({
+      message: 'User successfully logged in',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    })
+  } catch (err) {
+    console.error(err.message)
+    res.status(500).send('Server error')
+  }
+})
+
+
 //POST liked song to remote DB in "likes" collection
 app.post('/:userId/:songId/like', async (req, res) => {
   const { songId, userId } = req.params
