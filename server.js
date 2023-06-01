@@ -77,7 +77,7 @@ app.get('/search', async (req, res) => {
 })
 
 //GET recommendations array based on individual song info
-app.get(':userId/recommendations', async (req, res) => {
+app.get('/:userId/recommendations', async (req, res) => {
   const accessToken = await getAccessToken()
   let { seed_artists, seed_tracks, seed_genres, max_popularity } = req.query
 
@@ -130,7 +130,7 @@ app.get(':userId/recommendations', async (req, res) => {
     }
 
     // Save the batch
-    const batch = new Batch({ songs: songIds, user: req.params.userId })
+    const batch = new Batch({ songs: songIds, user: mongoose.Types.ObjectId(req.params.userId) });
     await batch.save()
 
     res.json(transformedData)
@@ -142,11 +142,9 @@ app.get(':userId/recommendations', async (req, res) => {
 
 //GET list of batches from "batches" collection
 app.get('/:userId/batches', async (req, res) => {
-  const { userId } = req.params.userId
+  const userId = req.params.userId
   try {
-    const response = await Batch.find({
-      user: mongoose.Schema.Types.ObjectId(userId)
-    })
+    const response = await Batch.find({ user: mongoose.Types.ObjectId(userId) })
     if (!response || response.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -228,43 +226,75 @@ app.post('/user/:userId/song/:id/like', async (req, res) => {
 })
 
 //DELETE entry from "likes" collection
-app.delete('/like/:id', async (req, res) => {
-  const { id } = req.params
+app.delete('/:userId/like/:id', async (req, res) => {
+  const id = req.params.id;
+  const userId = req.params.userId;
   try {
-    const like = await Like.findByIdAndDelete(id)
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: 'User not found'
+      });
+    }
+
+    // Remove the like id from the user's likes array
+    const likeIndex = user.likes.indexOf(id);
+    if (likeIndex === -1) {
+      return res.status(404).json({
+        status: 404,
+        message: 'Like not found for this user'
+      });
+    }
+    user.likes.splice(likeIndex, 1);
+    await user.save();
+
+    // Delete the like from the likes collection
+    const like = await Like.findByIdAndDelete(id);
     if (!like) {
       return res.status(404).json({
         status: 404,
         message: 'No like found with that ID'
-      })
+      });
     }
+
     res.status(200).json({
       status: 200,
       message: 'Successfully removed entry from likes'
-    })
+    });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     res.status(500).json({
       status: 500,
       message: 'Internal Server Error'
-    })
+    });
   }
-})
+});
+
 
 //DELETE recommendation batch from "batches" collection
 app.delete('/batch/:id', async (req, res) => {
   const { id } = req.params
   try {
-    const batch = await Batch.findByIdAndDelete(id)
+    const batch = await Batch.findById(id);
     if (!batch) {
       return res.status(404).json({
         status: 404,
         message: 'No batch found with that ID'
       })
     }
+
+    // Delete each song in the batch
+    for (let songId of batch.songs) {
+      await Song.findByIdAndDelete(songId);
+    }
+
+    // Delete the batch
+    await Batch.findByIdAndDelete(id)
+
     res.status(200).json({
       status: 200,
-      message: 'Successfully removed batch'
+      message: 'Successfully removed batch and associated songs'
     })
   } catch (error) {
     console.error(error)
@@ -273,8 +303,4 @@ app.delete('/batch/:id', async (req, res) => {
       message: 'Internal Server Error'
     })
   }
-})
-
-app.listen(PORT, () => {
-  console.log(`Node server running on port:${PORT}`)
 })
