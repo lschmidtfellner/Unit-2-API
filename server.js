@@ -66,7 +66,15 @@ app.get('/search', async (req, res) => {
 
     const tracks = response.data.tracks.items
     if (tracks.length > 0) {
-      res.json(tracks[0])
+      const track = tracks[0]
+      const songData = {
+        artist: track.artists.map((artist) => artist.name).join(', '),
+        popularity: track.popularity,
+        spotify_id: track.id,
+        title: track.name, // assuming 'title' is equivalent to the song name
+        previewURL: track.preview_url // use the track's preview_url field
+      }
+      res.json(songData)
     } else {
       res.status(404).send('No songs found.')
     }
@@ -76,8 +84,9 @@ app.get('/search', async (req, res) => {
   }
 })
 
+
 //GET recommendations array based on individual song info
-app.get('/:userId/recommendations', async (req, res) => {
+app.post('/:userId/recommendations', async (req, res) => {
   const accessToken = await getAccessToken()
   let { seed_artists, seed_tracks, seed_genres, max_popularity } = req.query
 
@@ -130,8 +139,16 @@ app.get('/:userId/recommendations', async (req, res) => {
     }
 
     // Save the batch
-    const batch = new Batch({ songs: songIds, user: mongoose.Types.ObjectId(req.params.userId) });
+    const batch = new Batch({ songs: songIds, user: req.params.userId })
     await batch.save()
+
+    // Get the user and add the batch to their batches array
+    const user = await User.findById(req.params.userId)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    user.batches.push(batch)
+    await user.save()
 
     res.json(transformedData)
   } catch (error) {
@@ -191,34 +208,33 @@ app.get('/batch/:id', async (req, res) => {
 //POST new user to database
 app.post('/signup', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password } = req.body
 
     // Check if user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email })
     if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists' })
     }
 
     // Create the user
-    user = new User({ username, email, password });
-    await user.save();
+    user = new User({ username, email, password })
+    await user.save()
 
     res.status(201).json({
       message: 'User successfully registered',
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
+        email: user.email
         // Don't send password back to client, just for demo
         // password: user.password
       }
-    });
+    })
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error(err.message)
+    res.status(500).send('Server error')
   }
-});
-
+})
 
 //POST liked song to remote DB in "likes" collection
 app.post('/:userId/:songId/like', async (req, res) => {
@@ -259,56 +275,55 @@ app.post('/:userId/:songId/like', async (req, res) => {
 
 //DELETE entry from "likes" collection
 app.delete('/:userId/like/:id', async (req, res) => {
-  const id = req.params.id;
-  const userId = req.params.userId;
+  const id = req.params.id
+  const userId = req.params.userId
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId)
     if (!user) {
       return res.status(404).json({
         status: 404,
         message: 'User not found'
-      });
+      })
     }
 
     // Remove the like id from the user's likes array
-    const likeIndex = user.likes.indexOf(id);
+    const likeIndex = user.likes.indexOf(id)
     if (likeIndex === -1) {
       return res.status(404).json({
         status: 404,
         message: 'Like not found for this user'
-      });
+      })
     }
-    user.likes.splice(likeIndex, 1);
-    await user.save();
+    user.likes.splice(likeIndex, 1)
+    await user.save()
 
     // Delete the like from the likes collection
-    const like = await Like.findByIdAndDelete(id);
+    const like = await Like.findByIdAndDelete(id)
     if (!like) {
       return res.status(404).json({
         status: 404,
         message: 'No like found with that ID'
-      });
+      })
     }
 
     res.status(200).json({
       status: 200,
       message: 'Successfully removed entry from likes'
-    });
+    })
   } catch (error) {
-    console.error(error);
+    console.error(error)
     res.status(500).json({
       status: 500,
       message: 'Internal Server Error'
-    });
+    })
   }
-});
-
+})
 
 //DELETE recommendation batch from "batches" collection
 app.delete('/batch/:id', async (req, res) => {
   const { id } = req.params
   try {
-    const batch = await Batch.findById(id);
+    const batch = await Batch.findById(id)
     if (!batch) {
       return res.status(404).json({
         status: 404,
@@ -318,7 +333,7 @@ app.delete('/batch/:id', async (req, res) => {
 
     // Delete each song in the batch
     for (let songId of batch.songs) {
-      await Song.findByIdAndDelete(songId);
+      await Song.findByIdAndDelete(songId)
     }
 
     // Delete the batch
@@ -335,4 +350,8 @@ app.delete('/batch/:id', async (req, res) => {
       message: 'Internal Server Error'
     })
   }
+})
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`)
 })
