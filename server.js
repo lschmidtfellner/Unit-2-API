@@ -188,11 +188,43 @@ app.get('/batch/:id', async (req, res) => {
   }
 })
 
-//POST liked song to remote DB in "likes" collection
-app.post('/user/:userId/song/:id/like', async (req, res) => {
-  const { id, userId } = req.params
+//POST new user to database
+app.post('/signup', async (req, res) => {
   try {
-    const song = await Song.findById(id)
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create the user
+    user = new User({ username, email, password });
+    await user.save();
+
+    res.status(201).json({
+      message: 'User successfully registered',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        // Don't send password back to client, just for demo
+        // password: user.password
+      }
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+
+//POST liked song to remote DB in "likes" collection
+app.post('/:userId/:songId/like', async (req, res) => {
+  const { songId, userId } = req.params
+  try {
+    const song = await Song.findById(songId)
     const user = await User.findById(userId)
     if (!song) {
       return res.status(404).json({
