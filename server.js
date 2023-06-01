@@ -338,8 +338,8 @@ app.post('/:userId/:songId/like', async (req, res) => {
 })
 
 //DELETE entry from "likes" collection
-app.delete('/:userId/like/:id', async (req, res) => {
-  const id = req.params.id
+app.delete('/:userId/:songId/like', async (req, res) => {
+  const songId = req.params.songId
   const userId = req.params.userId
   try {
     const user = await User.findById(userId)
@@ -351,7 +351,7 @@ app.delete('/:userId/like/:id', async (req, res) => {
     }
 
     // Remove the like id from the user's likes array
-    const likeIndex = user.likes.indexOf(id)
+    const likeIndex = user.likes.indexOf(songId)
     if (likeIndex === -1) {
       return res.status(404).json({
         status: 404,
@@ -362,7 +362,7 @@ app.delete('/:userId/like/:id', async (req, res) => {
     await user.save()
 
     // Delete the like from the likes collection
-    const like = await Like.findByIdAndDelete(id)
+    const like = await Like.findByIdAndDelete(songId)
     if (!like) {
       return res.status(404).json({
         status: 404,
