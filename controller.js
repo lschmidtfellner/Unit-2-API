@@ -54,7 +54,8 @@ export const searchSong = async (req, res) => {
         artist: track.artists.map((artist) => artist.name).join(', '),
         popularity: track.popularity,
         spotify_id: track.id,
-        previewURL: track.preview_url // use the track's preview_url field
+        previewURL: track.preview_url, // use the track's preview_url field
+        artURL: track.album.images[0].url
       }
 
       // Check if the song already exists in the "songs" collection
@@ -117,7 +118,8 @@ export const getRecs = async (req, res) => {
       artist: track.artists.map((artist) => artist.name).join(', '),
       popularity: track.popularity,
       spotify_id: track.id,
-      previewURL: track.preview_url // use the track's preview_url field
+      previewURL: track.preview_url, // use the track's preview_url field
+      artURL: track.album.images[0].url
     }))
 
     // Save to MongoDB
@@ -293,6 +295,7 @@ export const addToLikes = async (req, res) => {
       popularity: song.popularity,
       spotify_id: song.spotify_id,
       previewURL: song.previewURL,
+      artURL: song.artURL,
       user: userId
     })
     await like.save()

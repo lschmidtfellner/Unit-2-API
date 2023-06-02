@@ -20,6 +20,9 @@ let likeSchema = new mongoose.Schema({
   previewURL: {
     type: String
   },
+  artURL: {
+    type: String
+  },
   user: [
     {
       type: mongoose.Schema.Types.ObjectId,
