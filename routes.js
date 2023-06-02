@@ -20,11 +20,11 @@ router.get('/search', searchSong)
 router.post('/:userId/recommendations', getRecs)
 router.get('/:userId/likes', getUserLikes)
 router.get('/:userId/batches', getUserBatches)
-router.get('/batch/:id', getBatchSongs)
+router.get('/:userId/batches/:batchId', getBatchSongs)
 router.post('/signup', createUser)
 router.post('/login', userLogin)
 router.post('/:userId/:songId/like', addToLikes)
 router.delete('/:userId/:songId/like', deleteLike)
-router.delete('/batch/:id', deleteBatch)
+router.delete('/:userId/batch/:batchId', deleteBatch)
 
 export default router

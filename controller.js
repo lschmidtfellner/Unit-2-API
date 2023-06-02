@@ -5,28 +5,27 @@ import Batch from './models/batch.js'
 import Like from './models/like.js'
 import User from './models/user.js'
 
-
 export const getSongById = async (req, res) => {
   try {
     const { id } = req.params
-    const songURL = `https://api.spotify.com/v1/tracks/${id}`
-
-    // Get access token
-    const accessToken = await getAccessToken()
-
-    const response = await axios.get(songURL, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+    const response = await Song.findById(id)
+    if (!response || response.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: 'No likes found'
+      })
+    }
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully retrieved song',
+      body: response
     })
-
-    // Handle the response data here
-    const songData = response.data
-
-    res.json(songData)
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error'
+    })
   }
 }
 
@@ -130,7 +129,11 @@ export const getRecs = async (req, res) => {
     }
 
     // Save the batch
-    const batch = new Batch({ songs: songIds, user: req.params.userId })
+    const batch = new Batch({
+      name: new Date(),
+      songs: songIds,
+      user: req.params.userId
+    })
     await batch.save()
 
     // Get the user and add the batch to their batches array
@@ -196,9 +199,9 @@ export const getUserBatches = async (req, res) => {
 }
 
 export const getBatchSongs = async (req, res) => {
-  const { id } = req.params
+  const { userId, batchId } = req.params
   try {
-    const response = await Batch.find({ _id: id })
+    const response = await Batch.find({ _id: batchId, user: userId })
     if (!response || response.length === 0) {
       return res.status(404).json({
         status: 404,
@@ -355,9 +358,9 @@ export const deleteLike = async (req, res) => {
 }
 
 export const deleteBatch = async (req, res) => {
-  const { id } = req.params
+  const { userId, batchId } = req.params
   try {
-    const batch = await Batch.findById(id)
+    const batch = await Batch.findById(batchId)
     if (!batch) {
       return res.status(404).json({
         status: 404,
@@ -371,8 +374,15 @@ export const deleteBatch = async (req, res) => {
     }
 
     // Delete the batch
-    await Batch.findByIdAndDelete(id)
+    await Batch.findByIdAndDelete(batchId)
 
+    // Delete batch from user's profile
+    const user = await User.findById(userId)
+    const index = user.batches.findIndex(b => b._id.toString() === batchId);
+    if (index !== -1) {
+      user.batches.splice(index, 1);
+      await user.save();
+    }
     res.status(200).json({
       status: 200,
       message: 'Successfully removed batch and associated songs'
@@ -385,3 +395,4 @@ export const deleteBatch = async (req, res) => {
     })
   }
 }
+
