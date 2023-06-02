@@ -15,9 +15,6 @@ import {
 
 const router = express.Router()
 
-router.get('/', (req, res) => {
-  res.send('Please specify a route')
-})
 router.get('/song/:id', getSongById)
 router.get('/search', searchSong)
 router.get('/:userId/likes', getUserLikes)

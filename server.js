@@ -12,6 +12,7 @@ app.use(cors({origin: '*'}))
 
 // Import and use routes
 app.use('/api', routes)
+app.get('/', (req, res) => {res.send('Please specify a route')})
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
